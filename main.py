@@ -3,12 +3,11 @@ from pygame.locals import *
 import sys
 import os
 import random
-
+from open_1 import StartScreen
 
 pygame.init()
 size = width, height = 800, 700
 screen = pygame.display.set_mode(size)
-
 
 
 def load_image(name, colorkey=None):
@@ -58,7 +57,7 @@ class Faller(pygame.sprite.Sprite):
     def update(self):
         self.rect = self.rect.move(0, 20)
 
-
+StartScreen('fon_for_pg1.jpeg')
 if __name__ == '__main__':
     screen.fill((20, 20, 240))
     screen.fill((0, 255, 0), pygame.Rect(0, 500, width, 200))
@@ -72,7 +71,7 @@ if __name__ == '__main__':
     Faller(faller_spr)
     while running:
         for event in pygame.event.get():
-            if event == pygame.QUIT:
+            if event.type == pygame.QUIT:
                 running = False
             if event.type == pygame.KEYDOWN:
                 gamer_spr.update(event)
