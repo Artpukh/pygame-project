@@ -2,7 +2,7 @@ import pygame
 import sys
 import os
 pygame.init()
-size = width, height = 600, 600
+size = width, height = 800, 700
 FPS = 50
 clock = pygame.time.Clock()
 screen = pygame.display.set_mode(size)
@@ -29,28 +29,29 @@ def terminate():
     pygame.quit()
     sys.exit()
 
+
 class StartScreen:
     def __init__(self, fon_image):
         self.intro_text = ["Игра 'Ну, вирус, погоди!' "" ",
                       "Правила игры:",
                       "Главный герой - доктор, который должен",
-                      "поймать падающие м неба вирусы",
+                      "поймать падающие с неба вирусы",
                       "в свою маску."
                       "Игра продолжается, в зависимости от",
                       "выбранного уровня,",
-                      "либо до касания вируса земли",
+                      "либо до касания вирусом земли",
                       "или игрока,",
                       "либо до истечения времени,",
-                      "отведенного на раунд."]
+                      "отведённого на раунд."]
 
         fon = pygame.transform.scale(load_image(fon_image), (width, height))
         screen.blit(fon, (0, 0))
-        font = pygame.font.Font(None, 30)
+        font = pygame.font.Font(None, 35)
         text_coord = 50
         for line in self.intro_text:
             string_rendered = font.render(line, 1, pygame.Color('white'))
             intro_rect = string_rendered.get_rect()
-            text_coord += 15
+            text_coord += 20
             intro_rect.top = text_coord
             intro_rect.x = 40
             text_coord += intro_rect.height
@@ -65,6 +66,3 @@ class StartScreen:
                     return  # начинаем игру
             pygame.display.flip()
             clock.tick(FPS)
-
-
-StartScreen('fon_for_pg1.jpeg')
