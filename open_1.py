@@ -1,6 +1,7 @@
 import pygame
 import sys
 import os
+from open_2 import *
 pygame.init()
 size = width, height = 800, 700
 FPS = 50
@@ -66,3 +67,4 @@ class StartScreen:
                     return  # начинаем игру
             pygame.display.flip()
             clock.tick(FPS)
+

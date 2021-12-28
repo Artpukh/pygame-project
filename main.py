@@ -57,7 +57,7 @@ class Faller(pygame.sprite.Sprite):
     def update(self):
         self.rect = self.rect.move(0, 20)
 
-StartScreen('fon_for_pg1.jpeg')
+StartScreen('black_fon.jpg') # fon_for_pg1.jpeg
 if __name__ == '__main__':
     screen.fill((20, 20, 240))
     screen.fill((0, 255, 0), pygame.Rect(0, 500, width, 200))
