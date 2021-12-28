@@ -5,8 +5,6 @@ import sqlite3
 data = sqlite3.connect('game_data.db')
 cur = data.cursor()
 
-
-
 pygame.init()
 size = width, height = 800, 700
 screen = pygame.display.set_mode(size)
@@ -46,14 +44,61 @@ def labels(titles, coords, surf):
     surf.blit(label_text3, coords[3])
 
 
+def bestlb_tch(spis):
+    font = pygame.font.Font(None, 20)
+    text_1 = font.render('Лучший игрок в "до касания":', True, (255, 255, 255))
+    text_2 = font.render(spis[0], True, (255, 255, 255))
+    text_3 = font.render('Баллы:', True, (255, 255, 255))
+    text_4 = font.render(f'{spis[1]}', True, (255, 255, 255))
+    screen.blit(text_1, (50, 35))
+    screen.blit(text_2, (50, 60))
+    screen.blit(text_3, (50, 85))
+    screen.blit(text_4, (50, 110))
+
+
+def bestlb_time(spis):
+    font = pygame.font.Font(None, 20)
+    text_5 = font.render('Лучший игрок в "до истечения времени":', True, (255, 255, 255))
+    text_6 = font.render(f'{spis[0]}', True, (255, 255, 255))
+    text_7 = font.render('Баллы:', True, (255, 255, 255))
+    text_8 = font.render(f'{spis[1]}', True, (255, 255, 255))
+    screen.blit(text_5, (500, 35))
+    screen.blit(text_6, (500, 60))
+    screen.blit(text_7, (500, 85))
+    screen.blit(text_8, (500, 110))
+
+
+def thebest_tch():
+    players_tch = cur.execute('''SELECT nickname, points from Touch_Level''').fetchall()
+    if players_tch:
+        players_tch = sorted(players_tch, key=lambda x: -x[1])
+        pl_tch, record_tch = players_tch[0]
+        bestlb_tch([pl_tch, record_tch])
+        return [pl_tch, record_tch]
+    else:
+        bestlb_tch(['Пока что никого нет :(', 0])
+        return ['Пока что никого нет :(', 0]
+
+
+def thebest_time():
+    players_time = cur.execute('''SELECT nickname, points from Time_Level''').fetchall()
+    if players_time:
+        players_time = sorted(players_time, key=lambda x: -x[1])
+        pl_time, record_time = players_time[0]
+        bestlb_time([pl_time, record_time])
+        return [pl_time, record_time]
+    else:
+        bestlb_time(['Пока что никого нет :(', 0])
+        return ['Пока что никого нет :(', 0]
+
+
 class InputBox:
-    def __init__(self, x, y, w, h, lev=False, text=''):
+    def __init__(self, x, y, w, h, text=''):
         self.rect = pygame.Rect(x, y, w, h)
         self.color = color_inactive
         self.text = text
         self.txt_surface = shrift.render(text, True, self.color)
         self.active = False
-        self.lev = lev
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -80,45 +125,41 @@ class InputBox:
         screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
         pygame.draw.rect(screen, self.color, self.rect, 2)
 
-    def recorder(self):
-        return (self.best_nck, self.record)
+
+def main_prog(rect, *args):
+    if args and args[0].type == pygame.MOUSEBUTTONDOWN and rect.collidepoint(args[0].pos):
+        print(1)
 
 
 
 def main(screen):
-    buttom = pygame.Rect(300, 450, 150, 75)
     bt_surf = pygame.Surface((150, 75))
     labels_cord_sp = [(290, 170), (40, 295), (325, 450), (35, 28)]
     labels_ttl_sp = ['Введите ваш никнейм', 'Введите уровень сложности: до касания земли или до истечения времени',
                      'Играть!']
     labels(labels_ttl_sp, labels_cord_sp, bt_surf)
+    touching = thebest_tch()
+    timing = thebest_time()
+    print(touching, timing)
     clock = pygame.time.Clock()
     input_box1 = InputBox(300, 200, 140, 35)
-    input_box2 = InputBox(300, 340, 140, 35, True)
+    input_box2 = InputBox(300, 340, 140, 35)
     input_boxes = [input_box1, input_box2]
-    best_player, record = input_box2.recorder()
-    labels_cord_sp.append((650, 30))
-    labels_ttl_sp.append('Лучший игрок:')
-    labels_cord_sp.append((650, 60))
-    labels_ttl_sp.append(best_player)
-    labels_cord_sp.append((650, 90))
-    labels_ttl_sp.append('Рекорд:')
-    labels_cord_sp.append((650, 120))
-    labels_ttl_sp.append(record)
     run = True
-
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                main_prog(pygame.Rect(325, 450, 150, 75), event)
             for box in input_boxes:
                 box.handle_event(event)
         for i in input_boxes:
             i.update()
 
-
-        pygame.draw.rect(screen, (20, 220, 120), buttom)
         labels(labels_ttl_sp, labels_cord_sp, bt_surf)
+        bestlb_tch(touching)
+        bestlb_time(timing)
         for i in input_boxes:
             i.draw(screen)
 
