@@ -93,12 +93,15 @@ def thebest_time():
 
 
 class InputBox:
-    def __init__(self, x, y, w, h, text=''):
+    def __init__(self, x, y, w, h, text='', lev=False):
         self.rect = pygame.Rect(x, y, w, h)
         self.color = color_inactive
         self.text = text
         self.txt_surface = shrift.render(text, True, self.color)
         self.active = False
+        self.lev = lev
+        self.nick = ''
+        self.level = ''
 
     def handle_event(self, event):
         if event.type == pygame.MOUSEBUTTONDOWN:
@@ -109,8 +112,10 @@ class InputBox:
             self.color = color_active if self.active else color_inactive
         if event.type == pygame.KEYDOWN:
             if self.active:
-                if event.key == pygame.K_RETURN:
-                    self.text = ''
+                if event.key == pygame.K_RETURN and not self.lev:
+                    self.nick = self.text
+                elif event.key == pygame.K_RETURN and self.lev:
+                    self.level = self.text
                 elif event.key == pygame.K_BACKSPACE:
                     self.text = self.text[:-1]
                 else:
@@ -125,11 +130,17 @@ class InputBox:
         screen.blit(self.txt_surface, (self.rect.x+5, self.rect.y+5))
         pygame.draw.rect(screen, self.color, self.rect, 2)
 
+    def nick_and_lvl(self):
+        return [self.nick, self.level]
 
-def main_prog(rect, *args):
+
+def main_prog(rect, boxes, *args):
     if args and args[0].type == pygame.MOUSEBUTTONDOWN and rect.collidepoint(args[0].pos):
-        print(1)
-
+        sp = []
+        for i in range(len(boxes)):
+            sp.append(boxes[i].nick_and_lvl()[i])
+        print(sp)
+        return sp
 
 
 def main(screen):
@@ -140,20 +151,23 @@ def main(screen):
     labels(labels_ttl_sp, labels_cord_sp, bt_surf)
     touching = thebest_tch()
     timing = thebest_time()
-    print(touching, timing)
     clock = pygame.time.Clock()
     input_box1 = InputBox(300, 200, 140, 35)
-    input_box2 = InputBox(300, 340, 140, 35)
+    input_box2 = InputBox(300, 340, 140, 35, lev=True)
     input_boxes = [input_box1, input_box2]
+    bottom = pygame.Rect(325, 450, 150, 75)
     run = True
     while run:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
             if event.type == pygame.MOUSEBUTTONDOWN:
-                main_prog(pygame.Rect(325, 450, 150, 75), event)
+                main_prog(pygame.Rect(325, 450, 150, 75), input_boxes, event)
+                if main_prog(pygame.Rect(325, 450, 150, 75), input_boxes, event):
+                    run = False
             for box in input_boxes:
                 box.handle_event(event)
+
         for i in input_boxes:
             i.update()
 
@@ -165,8 +179,4 @@ def main(screen):
 
         pygame.display.flip()
         clock.tick(30)
-
-
-if __name__ == '__main__':
-    main(screen)
-    pygame.quit()
+ # pygame.Rect(325, 450, 150, 75)

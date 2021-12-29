@@ -1,7 +1,7 @@
 import pygame
 import sys
 import os
-from open_2 import *
+from open_2 import main
 pygame.init()
 size = width, height = 800, 700
 FPS = 50
@@ -57,6 +57,7 @@ class StartScreen:
             intro_rect.x = 40
             text_coord += intro_rect.height
             screen.blit(string_rendered, intro_rect)
+      #  run = True
 
         while True:
             for event in pygame.event.get():
@@ -64,7 +65,5 @@ class StartScreen:
                     terminate()
                 elif event.type == pygame.KEYDOWN or \
                         event.type == pygame.MOUSEBUTTONDOWN:
-                    return  # начинаем игру
             pygame.display.flip()
             clock.tick(FPS)
-
