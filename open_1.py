@@ -65,5 +65,6 @@ class StartScreen:
                     terminate()
                 elif event.type == pygame.KEYDOWN or \
                         event.type == pygame.MOUSEBUTTONDOWN:
+                    pass
             pygame.display.flip()
             clock.tick(FPS)

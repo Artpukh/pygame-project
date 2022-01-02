@@ -3,24 +3,32 @@ import sys
 import os
 import random
 from open_2 import main
+import sqlite3
+
+all_sprites = pygame.sprite.Group()
+horizontal_borders = pygame.sprite.Group()
+vertical_borders = pygame.sprite.Group()
 pygame.init()
 size = width, height = 800, 700
 screen = pygame.display.set_mode(size)
+count = 0
 clock = pygame.time.Clock()
+data = sqlite3.connect('game_data.db')
+cur = data.cursor()
 
 
-def load_image(name, colorkey=None):
+def load_image(name, color_key=None):
     fullname = os.path.join('data', name)
     # если файл не существует, то выходим
     if not os.path.isfile(fullname):
         print(f"Файл с изображением '{fullname}' не найден")
         sys.exit()
     image = pygame.image.load(fullname)
-    if colorkey is not None:
+    if color_key is not None:
         image = image.convert()
-        if colorkey == -1:
+        if color_key == -1:
             colorkey = image.get_at((0, 0))
-        image.set_colorkey(colorkey)
+        image.set_colorkey(color_key)
     else:
         image = image.convert_alpha()
     return image
@@ -35,10 +43,66 @@ def for_open_1():
                 sys.exit()
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
-                main(screen)
-                return
+                spis = main(screen)
+              #  print(spis)
+                return spis
         pygame.display.flip()
         clock.tick(30)
+
+
+def for_open_2():
+        EndScreen()
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
+                elif event.type == pygame.KEYDOWN or \
+                        event.type == pygame.MOUSEBUTTONDOWN:
+                    spis = main(screen)
+                    #  print(spis)
+                    return spis
+            pygame.display.flip()
+            clock.tick(30)
+
+
+def end(spis):
+    if spis[1] == 'до касания земли':
+        players = cur.execute('''SELECT nickname from Touch_Level''').fetchall()
+        if spis[0] in players:
+            players = cur.execute(f"""UPDATE Touch_Level
+                SET points = {spis[1]}
+                WHERE nickname = {spis[0]}""")
+        else:
+            players = cur.execute(f'''INSERT into Touch_Level(nickname,points)
+                                    VALUES({spis[0]}, {spis[1]})''')
+    else:
+        players = cur.execute('''SELECT nickname from Time_Level''').fetchall()
+        if spis[0] in players:
+            players = cur.execute(f"""UPDATE Time_Level
+                        SET points = {spis[1]}
+                        WHERE nickname = {spis[0]}""")
+        else:
+            players = cur.execute(f'''INSERT into Time_Level(nickname,points)
+                                            VALUES({spis[0]}, {spis[1]})''')
+        data.commit()
+        data.close()
+        for_open_2()
+
+
+
+
+class Grass(pygame.sprite.Sprite):
+    image = load_image("fon_for_pg1.jpeg", color_key=None) # grass1.png
+
+    def __init__(self):
+        super().__init__(all_sprites)
+        self.image = Grass.image
+        self.rect = self.image.get_rect()
+        # вычисляем маску для эффективного сравнения
+        self.mask = pygame.mask.from_surface(self.image)
+        # располагаем горы внизу
+        self.rect.bottom = height
 
 
 class Catcher(pygame.sprite.Sprite):
@@ -65,11 +129,51 @@ class Faller(pygame.sprite.Sprite):
         super().__init__(*group)
         self.image = Faller.image
         self.rect = self.image.get_rect()
-        self.rect.x = random.randrange(self.rect[2], width - self.rect[2])
-        self.y = 0
+        rand_pos = random.randint(1, 4)
+        if not pygame.sprite.spritecollideany(self, vertical_borders) and\
+           not pygame.sprite.spritecollideany(self, horizontal_borders):
+            # Бомба появляется в одном из 4 мест
+            if rand_pos == 1:
+                self.rect.x = 80
+                self.rect.y = 130
+            elif rand_pos == 2:
+                self.rect.x = 80
+                self.rect.y = 250
+            elif rand_pos == 3:
+                self.rect.x = 720
+                self.rect.y = 130
+            elif rand_pos == 4:
+                self.rect.x = 720
+                self.rect.y = 250
+        else:
+            pass
 
     def update(self):
-        self.rect = self.rect.move(0, 20)
+        # if not pygame.sprite.collide_mask(self, grass):
+        self.rect = self.rect.move(0, 2)
+
+class Border(pygame.sprite.Sprite):
+    # строго вертикальный или строго горизонтальный отрезок
+    def __init__(self, x1, y1, x2, y2):
+        super().__init__(all_sprites)
+
+        if x1 == x2:  # вертикальная стенка
+            self.add(vertical_borders)
+            self.image = pygame.Surface([1, y2 - y1])
+            self.rect = pygame.Rect(x1, y1, 1, y2 - y1)
+        else:  # горизонтальная стенка
+            self.add(horizontal_borders)
+            self.image = pygame.Surface([x2 - x1, 1])
+            self.rect = pygame.Rect(x1, y1, x2 - x1, 1)
+
+
+def draw(sc):
+    global count
+    font = pygame.font.Font(None, 50)
+    text = font.render(f"Счёт: {count}", True, (255, 255, 255))
+    text_x = 640
+    text_y = 10
+    sc.blit(text, (text_x, text_y))
 
 
 class StartScreen:
@@ -91,7 +195,7 @@ class StartScreen:
         font = pygame.font.Font(None, 35)
         text_coord = 50
         for line in self.intro_text:
-            string_rendered = font.render(line, 1, pygame.Color('white'))
+            string_rendered = font.render(line, True, pygame.Color('white'))
             intro_rect = string_rendered.get_rect()
             text_coord += 20
             intro_rect.top = text_coord
@@ -100,33 +204,74 @@ class StartScreen:
             screen.blit(string_rendered, intro_rect)
 
 
-for_open_1()
+class EndScreen:
+    def __init__(self):
+        fon = pygame.transform.scale(load_image('black_fon.jpg', (width, height)))
+        screen.blit(fon, (0, 0))
+        font = pygame.font.Font(None, 40)
+        label_text1 = font.render(f'Ваш результат: {count}', True, (255, 255, 255))
+        label_text2 = font.render('Вернуться в стартовое меню', True, (255, 255, 255))
+        bt_surf = pygame.Surface((250, 75))
+        screen.blit(bt_surf, (250, 500))
+        bt_surf.fill((20, 220, 20))
+        bt_surf.blit(label_text2, (35, 28))
+        screen.blit(label_text1, 300, 400)
+
+
+
+
+spis = for_open_1()
+print(spis)
 if __name__ == '__main__':
-    screen.fill((20, 20, 240))
-    screen.fill((0, 255, 0), pygame.Rect(0, 500, width, 200))
-    running = True
+    screen.fill((149, 200, 216))
+    grass = Grass()
+    clock = pygame.time.Clock()
     timer = pygame.USEREVENT + 1
     gamer_spr = pygame.sprite.Group()
     Catcher(gamer_spr)
     faller_spr = pygame.sprite.Group()
-    pygame.time.set_timer(timer, 100)
+    pygame.time.set_timer(timer, 1000)
+    # Border(0, 380, 800, 375)
+    Border(0, 380, 0, 700)
+    Border(0, 700, 800, 700)
+    Border(800, 375, 800, 700)
+    Border(80, 545, 130, 545)
     Faller(faller_spr)
+    running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.KEYDOWN:
-                gamer_spr.update(event)
+                end(spis)
+            '''
             if event.type == timer:
                 Faller(faller_spr)
                 faller_spr.draw(screen)
                 faller_spr.update()
-
-        pygame.display.flip()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                print(event.pos)
+            '''
+        event = None
+        screen.fill((149, 200, 216))
+        gamer_spr.update(event)
+        all_sprites.draw(screen)
+        all_sprites.update()
+        gamer_spr.draw(screen)
         faller_spr.draw(screen)
         faller_spr.update()
-        screen.fill((0, 0, 255))
-        screen.fill((0, 255, 0), pygame.Rect(0, 500, width, 200))
-        gamer_spr.draw(screen)
-        clock.tick(30)
+        draw(screen)
+        pygame.display.flip()
+        clock.tick(60)
+
     pygame.quit()
+
+
+'''
+def check_level(level):
+    if level == 'до касания земли':
+
+
+
+if spis and spis[1] == 'до касания земли:'
+    check_level('до касания земли')
+'''

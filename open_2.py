@@ -139,7 +139,6 @@ def main_prog(rect, boxes, *args):
         sp = []
         for i in range(len(boxes)):
             sp.append(boxes[i].nick_and_lvl()[i])
-        print(sp)
         return sp
 
 
@@ -155,7 +154,6 @@ def main(screen):
     input_box1 = InputBox(300, 200, 140, 35)
     input_box2 = InputBox(300, 340, 140, 35, lev=True)
     input_boxes = [input_box1, input_box2]
-    bottom = pygame.Rect(325, 450, 150, 75)
     run = True
     while run:
         for event in pygame.event.get():
@@ -164,7 +162,7 @@ def main(screen):
             if event.type == pygame.MOUSEBUTTONDOWN:
                 main_prog(pygame.Rect(325, 450, 150, 75), input_boxes, event)
                 if main_prog(pygame.Rect(325, 450, 150, 75), input_boxes, event):
-                    run = False
+                    return main_prog(pygame.Rect(325, 450, 150, 75), input_boxes, event)
             for box in input_boxes:
                 box.handle_event(event)
 
