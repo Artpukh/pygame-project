@@ -44,52 +44,56 @@ def for_open_1():
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
                 spis = main(screen)
-              #  print(spis)
                 return spis
         pygame.display.flip()
         clock.tick(30)
 
 
 def for_open_2():
+    EndScreen()
+    while True:
         EndScreen()
-        while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    pygame.quit()
-                    sys.exit()
-                elif event.type == pygame.KEYDOWN or \
-                        event.type == pygame.MOUSEBUTTONDOWN:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN or \
+                    event.type == pygame.MOUSEBUTTONDOWN:
+                if EndScreen().check(event):
                     spis = main(screen)
-                    #  print(spis)
                     return spis
-            pygame.display.flip()
-            clock.tick(30)
+   #     EndScreen()
+        pygame.display.flip()
+        clock.tick(30)
 
 
 def end(spis):
     if spis[1] == 'до касания земли':
         players = cur.execute('''SELECT nickname from Touch_Level''').fetchall()
         if spis[0] in players:
-            players = cur.execute(f"""UPDATE Touch_Level
-                SET points = {spis[1]}
-                WHERE nickname = {spis[0]}""")
+            players = cur.execute("""UPDATE Touch_Level
+                SET points=?
+                WHERE nickname=?""", (count, spis[0]))
         else:
-            players = cur.execute(f'''INSERT into Touch_Level(nickname,points)
-                                    VALUES({spis[0]}, {spis[1]})''')
+            add = '''INSERT into Time_Level(nickname,points)
+                                                        VALUES(?, ?)'''
+            tuplee = (spis[0], count)
+            cur.execute(add, tuplee)
     else:
         players = cur.execute('''SELECT nickname from Time_Level''').fetchall()
         if spis[0] in players:
-            players = cur.execute(f"""UPDATE Time_Level
-                        SET points = {spis[1]}
-                        WHERE nickname = {spis[0]}""")
+            players = cur.execute("""UPDATE Time_Level
+                        SET points=?
+                        WHERE nickname=?""", (count, spis[0]))
         else:
-            players = cur.execute(f'''INSERT into Time_Level(nickname,points)
-                                            VALUES({spis[0]}, {spis[1]})''')
-        data.commit()
-        data.close()
-        for_open_2()
-
-
+            add = '''INSERT into Time_Level(nickname,points)
+                                            VALUES(?, ?)'''
+            tuplee = (spis[0], count)
+            cur.execute(add, tuplee)
+    data.commit()
+    data.close()
+    spis = for_open_2()
+    return
 
 
 class Grass(pygame.sprite.Sprite):
@@ -206,18 +210,22 @@ class StartScreen:
 
 class EndScreen:
     def __init__(self):
-        fon = pygame.transform.scale(load_image('black_fon.jpg', (width, height)))
+        fon = pygame.transform.scale(load_image('black_fon.jpg'), (width, height))
         screen.blit(fon, (0, 0))
         font = pygame.font.Font(None, 40)
         label_text1 = font.render(f'Ваш результат: {count}', True, (255, 255, 255))
         label_text2 = font.render('Вернуться в стартовое меню', True, (255, 255, 255))
         bt_surf = pygame.Surface((250, 75))
-        screen.blit(bt_surf, (250, 500))
-        bt_surf.fill((20, 220, 20))
+        screen.blit(label_text1, (300, 250))
+        screen.blit(bt_surf, (300, 350))
+        bt_surf.fill((0, 255, 0))
         bt_surf.blit(label_text2, (35, 28))
-        screen.blit(label_text1, 300, 400)
+        self.bt_rect = pygame.Rect(300, 350, 250, 75)
 
-
+    def check(self, *args):
+        if args and self.bt_rect.collidepoint(args[0].pos):
+            return True
+        return False
 
 
 spis = for_open_1()
