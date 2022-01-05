@@ -230,7 +230,9 @@ class EndScreen:
 
 
 spis = for_open_1()
-print(spis)
+if spis is None:
+    pygame.quit()
+    sys.exit()
 if __name__ == '__main__':
     screen.fill((149, 200, 216))
     grass = Grass()
