@@ -13,8 +13,8 @@ size = width, height = 800, 700
 screen = pygame.display.set_mode(size)
 count = 0
 clock = pygame.time.Clock()
-data = sqlite3.connect('game_data.db')
-cur = data.cursor()
+# data = sqlite3.connect('game_data.db')
+# cur = data.cursor()
 
 
 def load_image(name, color_key=None):
@@ -50,7 +50,7 @@ def for_open_1():
 
 
 def for_open_2():
-    EndScreen()
+  #  EndScreen()
     while True:
         EndScreen()
         for event in pygame.event.get():
@@ -60,14 +60,16 @@ def for_open_2():
             elif event.type == pygame.KEYDOWN or \
                     event.type == pygame.MOUSEBUTTONDOWN:
                 if EndScreen().check(event):
-                    spis = main(screen)
-                    return spis
-   #     EndScreen()
+                    sp_rt = main(screen)
+                    return sp_rt
+        EndScreen()
         pygame.display.flip()
         clock.tick(30)
 
 
 def end(spis):
+    data = sqlite3.connect('game_data.db')
+    cur = data.cursor()
     if spis[1] == 'до касания земли':
         players = cur.execute('''SELECT nickname from Touch_Level''').fetchall()
         if spis[0] in players:
@@ -75,7 +77,7 @@ def end(spis):
                 SET points=?
                 WHERE nickname=?""", (count, spis[0]))
         else:
-            add = '''INSERT into Time_Level(nickname,points)
+            add = '''INSERT into Touch_Level(nickname,points)
                                                         VALUES(?, ?)'''
             tuplee = (spis[0], count)
             cur.execute(add, tuplee)
@@ -93,7 +95,7 @@ def end(spis):
     data.commit()
     data.close()
     spis = for_open_2()
-    return
+    return spis
 
 
 class Grass(pygame.sprite.Sprite):
@@ -189,8 +191,7 @@ class StartScreen:
                       "в свою маску."
                       "Игра продолжается, в зависимости от",
                       "выбранного уровня,",
-                      "либо до касания вирусом земли",
-                      "или игрока,",
+                      "либо до касания вирусом земли,",
                       "либо до истечения времени,",
                       "отведённого на раунд."]
 
@@ -212,15 +213,15 @@ class EndScreen:
     def __init__(self):
         fon = pygame.transform.scale(load_image('black_fon.jpg'), (width, height))
         screen.blit(fon, (0, 0))
-        font = pygame.font.Font(None, 40)
+        font = pygame.font.Font(None, 35)
         label_text1 = font.render(f'Ваш результат: {count}', True, (255, 255, 255))
-        label_text2 = font.render('Вернуться в стартовое меню', True, (255, 255, 255))
-        bt_surf = pygame.Surface((250, 75))
+        label_text2 = font.render('Вернуться в стартовое меню', True, (0, 0, 0))
+        bt_surf = pygame.Surface((350, 75))
         screen.blit(label_text1, (300, 250))
-        screen.blit(bt_surf, (300, 350))
         bt_surf.fill((0, 255, 0))
-        bt_surf.blit(label_text2, (35, 28))
-        self.bt_rect = pygame.Rect(300, 350, 250, 75)
+        bt_surf.blit(label_text2, (3, 28))
+        screen.blit(bt_surf, (240, 350))
+        self.bt_rect = pygame.Rect(250, 350, 350, 75)
 
     def check(self, *args):
         if args and self.bt_rect.collidepoint(args[0].pos):
@@ -249,8 +250,8 @@ if __name__ == '__main__':
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                running = False
-                end(spis)
+               # running = False
+                spis = end(spis)
             '''
             if event.type == timer:
                 Faller(faller_spr)
