@@ -7,10 +7,13 @@ import random
 all_sprites = pygame.sprite.Group()
 horizontal_borders = pygame.sprite.Group()
 vertical_borders = pygame.sprite.Group()
+bomb_borders = pygame.sprite.Group()
 pygame.init()
 size = width, height = 800, 700
 screen = pygame.display.set_mode(size)
 count = 0
+wall_list = []
+step = 5
 
 
 def load_image(name, color_key=None):
@@ -31,7 +34,7 @@ def load_image(name, color_key=None):
 
 
 class Grass(pygame.sprite.Sprite):
-    image = load_image("grass1.png", color_key=None)
+    image = load_image("grass2.png", color_key=None)
 
     def __init__(self):
         super().__init__(all_sprites)
@@ -52,27 +55,50 @@ class Catcher(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = 300
         self.rect.y = 550
+        self.spr = self.rect
+        self.gamer_left = pygame.transform.flip(self.image, True, False)
+        self.main_gamer = self.image
+        print(self.spr)
+
+    def move(self, x_step, y_step):
+        self.spr.x += x_step
+        for wall in wall_list:
+            if self.spr.colliderect(wall):
+                if x_step < 0:
+                    self.spr.left = wall.right
+                elif x_step > 0:
+                    self.spr.right = wall.left
+                break
+
+        self.spr.y += y_step
+        for wall in wall_list:
+            if self.spr.colliderect(wall):
+                if y_step < 0:
+                    self.spr.top = wall.bottom
+                elif y_step > 0:
+                    self.spr.bottom = wall.top
+                break
 
     def update(self, *args):
         if pygame.sprite.spritecollide(self, faller_spr, True):
             global count
             count += 1
-        if not pygame.sprite.spritecollideany(self, vertical_borders) and \
-           not pygame.sprite.spritecollideany(self, horizontal_borders):
-            if args and (pygame.key.get_pressed()[pygame.K_RIGHT]):
-                self.rect = self.rect.move(5, 0)
-            if args and (pygame.key.get_pressed()[pygame.K_LEFT]):
-                self.rect = self.rect.move(-5, 0)
-            if args and (pygame.key.get_pressed()[pygame.K_UP]):
-                self.rect = self.rect.move(0, -5)
-            if args and (pygame.key.get_pressed()[pygame.K_DOWN]):
-                self.rect = self.rect.move(0, 5)
-        else:
-            self.rect.x = 300
-            self.rect.y = 550
+        if args and (pygame.key.get_pressed()[pygame.K_RIGHT]):
+            self.move(step, 0)
+            self.image = self.main_gamer
+
+        if args and (pygame.key.get_pressed()[pygame.K_LEFT]):
+            self.move(-step, 0)
+
+            self.image = self.gamer_left
+        if args and (pygame.key.get_pressed()[pygame.K_UP]):
+            self.move(0, -step)
+
+        if args and (pygame.key.get_pressed()[pygame.K_DOWN]):
+            self.move(0, step)
 
 
-class Faller(pygame.sprite.Sprite):
+class Faller(pygame.sprite.Sprite, ):
     image = load_image('bomb.png')
 
     def __init__(self, *group):
@@ -80,42 +106,54 @@ class Faller(pygame.sprite.Sprite):
         self.image = Faller.image
         self.rect = self.image.get_rect()
         rand_pos = random.randint(1, 4)
-        if not pygame.sprite.spritecollideany(self, vertical_borders) and\
-           not pygame.sprite.spritecollideany(self, horizontal_borders):
-            # Бомба появляется в одном из 4 мест
-            if rand_pos == 1:
-                self.rect.x = 80
-                self.rect.y = 130
-            elif rand_pos == 2:
-                self.rect.x = 80
-                self.rect.y = 250
-            elif rand_pos == 3:
-                self.rect.x = 720
-                self.rect.y = 130
-            elif rand_pos == 4:
-                self.rect.x = 720
-                self.rect.y = 250
-        else:
-            pass
+
+        # Бомба появляется в одном из 4 мест
+        if rand_pos == 1:
+            self.rect.x = 80
+            self.rect.y = 130
+        elif rand_pos == 2:
+            self.rect.x = 120
+            self.rect.y = 250
+        elif rand_pos == 3:
+            self.rect.x = 720
+            self.rect.y = 130
+        elif rand_pos == 4:
+            self.rect.x = 675
+            self.rect.y = 250
 
     def update(self):
-        # if not pygame.sprite.collide_mask(self, grass):
         self.rect = self.rect.move(0, 2)
+
+        if pygame.sprite.spritecollide(self, bomb_borders, False):
+            global running
+            running = False
 
 
 class Border(pygame.sprite.Sprite):
     # строго вертикальный или строго горизонтальный отрезок
     def __init__(self, x1, y1, x2, y2):
         super().__init__(all_sprites)
-
         if x1 == x2:  # вертикальная стенка
             self.add(vertical_borders)
             self.image = pygame.Surface([1, y2 - y1])
+            self.image.fill((119, 168, 58))
             self.rect = pygame.Rect(x1, y1, 1, y2 - y1)
+            wall_list.append(self.rect)
         else:  # горизонтальная стенка
             self.add(horizontal_borders)
             self.image = pygame.Surface([x2 - x1, 1])
+            self.image.fill((119, 168, 58))
             self.rect = pygame.Rect(x1, y1, x2 - x1, 1)
+            wall_list.append(self.rect)
+
+
+class BombBorder(pygame.sprite.Sprite):
+    def __init__(self, x1, y1, x2):
+        super().__init__(all_sprites)
+        # горизонтальная стенка
+        self.add(bomb_borders)
+        self.image = pygame.Surface([x2 - x1, 1])
+        self.rect = pygame.Rect(x1, y1, x2 - x1, 1)
 
 
 def draw(sc):
@@ -132,6 +170,10 @@ if __name__ == '__main__':
     grass = Grass()
     clock = pygame.time.Clock()
     timer = pygame.USEREVENT + 1
+    BombBorder(85, 545, 115)
+    BombBorder(125, 615, 155)
+    BombBorder(725, 545, 755)
+    BombBorder(680, 615, 710)
     gamer_spr = pygame.sprite.Group()
     Catcher(gamer_spr)
     faller_spr = pygame.sprite.Group()
@@ -140,12 +182,13 @@ if __name__ == '__main__':
     Border(0, 380, 0, 700)
     Border(0, 700, 800, 700)
     Border(800, 375, 800, 700)
-    Border(80, 545, 130, 545)
+    Border(0, 380, 800, 380)
     Faller(faller_spr)
+
     running = True
     while running:
         for event in pygame.event.get():
-            if event == pygame.QUIT:
+            if event.type == pygame.QUIT:
                 running = False
             if event.type == timer:
                 Faller(faller_spr)
