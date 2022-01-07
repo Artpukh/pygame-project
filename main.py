@@ -5,16 +5,28 @@ import random
 from open_2 import main
 import sqlite3
 
-all_sprites = pygame.sprite.Group()
-horizontal_borders = pygame.sprite.Group()
-vertical_borders = pygame.sprite.Group()
+
 pygame.init()
 size = width, height = 800, 700
 screen = pygame.display.set_mode(size)
-count = 0
 clock = pygame.time.Clock()
-# data = sqlite3.connect('game_data.db')
-# cur = data.cursor()
+all_sprites = pygame.sprite.Group()
+horizontal_borders = pygame.sprite.Group()
+vertical_borders = pygame.sprite.Group()
+bomb_borders = pygame.sprite.Group()
+count = 0
+seconds = 60
+wall_list = []
+step = 8
+choosen_level = None
+
+
+def check_level(level):
+    global choosen_level
+    if level == 'до касания земли':
+        choosen_level = True
+    else:
+        choosen_level = False
 
 
 def load_image(name, color_key=None):
@@ -50,18 +62,12 @@ def for_open_1():
 
 
 def for_open_2():
-  #  EndScreen()
     while True:
         EndScreen()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.KEYDOWN or \
-                    event.type == pygame.MOUSEBUTTONDOWN:
-                if EndScreen().check(event):
-                    sp_rt = main(screen)
-                    return sp_rt
         EndScreen()
         pygame.display.flip()
         clock.tick(30)
@@ -71,11 +77,13 @@ def end(spis):
     data = sqlite3.connect('game_data.db')
     cur = data.cursor()
     if spis[1] == 'до касания земли':
-        players = cur.execute('''SELECT nickname from Touch_Level''').fetchall()
-        if spis[0] in players:
-            players = cur.execute("""UPDATE Touch_Level
-                SET points=?
-                WHERE nickname=?""", (count, spis[0]))
+        players = cur.execute('''SELECT nickname, points from Touch_Level''').fetchall()
+        our_pl = list(filter(lambda x: x[0] == spis[0], players))
+        if our_pl:
+            if our_pl[0][1] < count:
+                players = cur.execute("""UPDATE Touch_Level
+                    SET points=?
+                    WHERE nickname=?""", (count, spis[0]))
         else:
             add = '''INSERT into Touch_Level(nickname,points)
                                                         VALUES(?, ?)'''
@@ -99,7 +107,7 @@ def end(spis):
 
 
 class Grass(pygame.sprite.Sprite):
-    image = load_image("fon_for_pg1.jpeg", color_key=None) # grass1.png
+    image = load_image("grass2.png", color_key=None) # grass1.png
 
     def __init__(self):
         super().__init__(all_sprites)
@@ -112,7 +120,7 @@ class Grass(pygame.sprite.Sprite):
 
 
 class Catcher(pygame.sprite.Sprite):
-    image = load_image('car2.png')
+    image = load_image('car2.png', color_key=None)
 
     def __init__(self, *group):
         super().__init__(*group)
@@ -120,15 +128,50 @@ class Catcher(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = 300
         self.rect.y = 550
+        self.spr = self.rect
+        self.gamer_left = pygame.transform.flip(self.image, True, False)
+        self.main_gamer = self.image
+        print(self.spr)
+
+    def move(self, x_step, y_step):
+        self.spr.x += x_step
+        for wall in wall_list:
+            if self.spr.colliderect(wall):
+                if x_step < 0:
+                    self.spr.left = wall.right
+                elif x_step > 0:
+                    self.spr.right = wall.left
+                break
+
+        self.spr.y += y_step
+        for wall in wall_list:
+            if self.spr.colliderect(wall):
+                if y_step < 0:
+                    self.spr.top = wall.bottom
+                elif y_step > 0:
+                    self.spr.bottom = wall.top
+                break
 
     def update(self, *args):
+        if pygame.sprite.spritecollide(self, faller_spr, True):
+            global count
+            count += 1
         if args and (pygame.key.get_pressed()[pygame.K_RIGHT]):
-            self.rect = self.rect.move(10, 0)
+            self.move(step, 0)
+            self.image = self.main_gamer
+
         if args and (pygame.key.get_pressed()[pygame.K_LEFT]):
-            self.rect = self.rect.move(-10, 0)
+            self.move(-step, 0)
+
+            self.image = self.gamer_left
+        if args and (pygame.key.get_pressed()[pygame.K_UP]):
+            self.move(0, -step)
+
+        if args and (pygame.key.get_pressed()[pygame.K_DOWN]):
+            self.move(0, step)
 
 
-class Faller(pygame.sprite.Sprite):
+class Faller(pygame.sprite.Sprite, ):
     image = load_image('bomb.png')
 
     def __init__(self, *group):
@@ -136,41 +179,59 @@ class Faller(pygame.sprite.Sprite):
         self.image = Faller.image
         self.rect = self.image.get_rect()
         rand_pos = random.randint(1, 4)
-        if not pygame.sprite.spritecollideany(self, vertical_borders) and\
-           not pygame.sprite.spritecollideany(self, horizontal_borders):
-            # Бомба появляется в одном из 4 мест
-            if rand_pos == 1:
-                self.rect.x = 80
-                self.rect.y = 130
-            elif rand_pos == 2:
-                self.rect.x = 80
-                self.rect.y = 250
-            elif rand_pos == 3:
-                self.rect.x = 720
-                self.rect.y = 130
-            elif rand_pos == 4:
-                self.rect.x = 720
-                self.rect.y = 250
-        else:
-            pass
+
+        # Бомба появляется в одном из 4 мест
+        if rand_pos == 1:
+            self.rect.x = 80
+            self.rect.y = 130
+        elif rand_pos == 2:
+            self.rect.x = 120
+            self.rect.y = 250
+        elif rand_pos == 3:
+            self.rect.x = 720
+            self.rect.y = 130
+        elif rand_pos == 4:
+            self.rect.x = 675
+            self.rect.y = 250
 
     def update(self):
-        # if not pygame.sprite.collide_mask(self, grass):
         self.rect = self.rect.move(0, 2)
+        if choosen_level:
+            if pygame.sprite.spritecollide(self, bomb_borders, False):
+                global spis
+                end(spis)
+
 
 class Border(pygame.sprite.Sprite):
     # строго вертикальный или строго горизонтальный отрезок
     def __init__(self, x1, y1, x2, y2):
         super().__init__(all_sprites)
-
         if x1 == x2:  # вертикальная стенка
             self.add(vertical_borders)
             self.image = pygame.Surface([1, y2 - y1])
+            self.image.fill((119, 168, 58))
             self.rect = pygame.Rect(x1, y1, 1, y2 - y1)
+            wall_list.append(self.rect)
         else:  # горизонтальная стенка
             self.add(horizontal_borders)
             self.image = pygame.Surface([x2 - x1, 1])
+            self.image.fill((119, 168, 58))
             self.rect = pygame.Rect(x1, y1, x2 - x1, 1)
+            wall_list.append(self.rect)
+
+
+class BombBorder(pygame.sprite.Sprite):
+    def __init__(self, x1, y1, x2):
+        super().__init__(all_sprites)
+        # горизонтальная стенка
+        self.add(bomb_borders)
+        self.image = pygame.Surface([x2 - x1, 1])
+        self.rect = pygame.Rect(x1, y1, x2 - x1, 1)
+
+    def update(self):
+        if not choosen_level:
+            if pygame.sprite.spritecollide(self, faller_spr, True):
+                pass
 
 
 def draw(sc):
@@ -180,6 +241,11 @@ def draw(sc):
     text_x = 640
     text_y = 10
     sc.blit(text, (text_x, text_y))
+    if not choosen_level:
+        text_timer = font.render(f'Осталось секунд: {seconds}', True, (255, 255, 255))
+        text_timer_x = 5
+        text_timer_y = 10
+        sc.blit(text_timer, (text_timer_x, text_timer_y))
 
 
 class StartScreen:
@@ -215,53 +281,59 @@ class EndScreen:
         screen.blit(fon, (0, 0))
         font = pygame.font.Font(None, 35)
         label_text1 = font.render(f'Ваш результат: {count}', True, (255, 255, 255))
-        label_text2 = font.render('Вернуться в стартовое меню', True, (0, 0, 0))
-        bt_surf = pygame.Surface((350, 75))
+    #    label_text2 = font.render('Вернуться в стартовое меню', True, (0, 0, 0))
+    #    bt_surf = pygame.Surface((350, 75))
         screen.blit(label_text1, (300, 250))
-        bt_surf.fill((0, 255, 0))
-        bt_surf.blit(label_text2, (3, 28))
-        screen.blit(bt_surf, (240, 350))
-        self.bt_rect = pygame.Rect(250, 350, 350, 75)
-
+   #     bt_surf.fill((0, 255, 0))
+    #    bt_surf.blit(label_text2, (3, 28))
+    #    screen.blit(bt_surf, (240, 350))
+   #     self.bt_rect = pygame.Rect(250, 350, 350, 75)
+'''
     def check(self, *args):
         if args and self.bt_rect.collidepoint(args[0].pos):
             return True
         return False
-
+'''
 
 spis = for_open_1()
 if spis is None:
     pygame.quit()
     sys.exit()
+check_level(spis[1])
 if __name__ == '__main__':
     screen.fill((149, 200, 216))
     grass = Grass()
-    clock = pygame.time.Clock()
     timer = pygame.USEREVENT + 1
+    pygame.time.set_timer(timer, 1000)
+    timer2 = pygame.USEREVENT + 2
+    pygame.time.set_timer(timer2, 60000)
+    BombBorder(85, 545, 115)
+    BombBorder(125, 615, 155)
+    BombBorder(725, 545, 755)
+    BombBorder(680, 615, 710)
     gamer_spr = pygame.sprite.Group()
     Catcher(gamer_spr)
     faller_spr = pygame.sprite.Group()
-    pygame.time.set_timer(timer, 1000)
-    # Border(0, 380, 800, 375)
     Border(0, 380, 0, 700)
     Border(0, 700, 800, 700)
     Border(800, 375, 800, 700)
-    Border(80, 545, 130, 545)
+    Border(0, 380, 800, 380)
     Faller(faller_spr)
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                # running = False
-                spis = end(spis)
-            '''
+                end(spis)
             if event.type == timer:
                 Faller(faller_spr)
                 faller_spr.draw(screen)
                 faller_spr.update()
+                seconds -= 1
+            if event.type == timer2:
+                end(spis)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 print(event.pos)
-            '''
         event = None
         screen.fill((149, 200, 216))
         gamer_spr.update(event)
@@ -270,6 +342,7 @@ if __name__ == '__main__':
         gamer_spr.draw(screen)
         faller_spr.draw(screen)
         faller_spr.update()
+        bomb_borders.update()
         draw(screen)
         pygame.display.flip()
         clock.tick(60)
@@ -278,11 +351,6 @@ if __name__ == '__main__':
 
 
 '''
-def check_level(level):
-    if level == 'до касания земли':
-
-
-
 if spis and spis[1] == 'до касания земли:'
     check_level('до касания земли')
 '''
