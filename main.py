@@ -25,7 +25,7 @@ choosen_level = None
 
 def check_level(level):
     global choosen_level
-    if level == 'до касания земли' or level == "До касания земли":
+    if level == 'до касания земли':
         choosen_level = True
     else:
         choosen_level = False
@@ -84,7 +84,7 @@ def for_open_2():
 def end(spis):
     data = sqlite3.connect('game_data.db')
     cur = data.cursor()
-    if spis[1] == "до касания земли" or spis[1] == "До касания земли":
+    if spis[1] == "до касания земли":
         players = cur.execute('''SELECT nickname, points from Touch_Level''').fetchall()
         our_pl = list(filter(lambda x: x[0] == spis[0], players))
         if our_pl:
@@ -97,7 +97,7 @@ def end(spis):
                                                         VALUES(?, ?)'''
             tuplee = (spis[0], count)
             cur.execute(add, tuplee)
-    elif spis[1] == "до истечения времени" or spis[1] == "До истечения времени":
+    elif spis[1] == "до истечения времени":
         players = cur.execute('''SELECT nickname from Time_Level''').fetchall()
         if spis[0] in players:
             players = cur.execute("""UPDATE Time_Level
@@ -142,7 +142,6 @@ class Catcher(pygame.sprite.Sprite):
         self.spr = self.rect
         self.gamer_left = pygame.transform.flip(self.image, True, False)
         self.main_gamer = self.image
-        print(self.spr)
 
     def move(self, x_step, y_step):
         self.spr.x += x_step
@@ -344,8 +343,6 @@ if __name__ == '__main__':
             if event.type == timer2:
                 if choosen_level is False:
                     end(spis)
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                print(event.pos)
         event = None
         screen.fill((149, 200, 216))
         gamer_spr.update(event)
