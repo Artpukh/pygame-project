@@ -1,3 +1,5 @@
+import time
+
 import pygame
 import sys
 import os
@@ -23,7 +25,7 @@ choosen_level = None
 
 def check_level(level):
     global choosen_level
-    if level == 'до касания земли':
+    if level == 'до касания земли' or level == "До касания земли":
         choosen_level = True
     else:
         choosen_level = False
@@ -63,11 +65,17 @@ def for_open_1():
 
 def for_open_2():
     while True:
+        global running
         EndScreen()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if EndScreen().check(event):
+                    pygame.quit()
+                    os.system('python main.py')
+                    sys.exit()
         EndScreen()
         pygame.display.flip()
         clock.tick(30)
@@ -76,7 +84,7 @@ def for_open_2():
 def end(spis):
     data = sqlite3.connect('game_data.db')
     cur = data.cursor()
-    if spis[1] == 'до касания земли':
+    if spis[1] == "до касания земли" or spis[1] == "До касания земли":
         players = cur.execute('''SELECT nickname, points from Touch_Level''').fetchall()
         our_pl = list(filter(lambda x: x[0] == spis[0], players))
         if our_pl:
@@ -89,7 +97,7 @@ def end(spis):
                                                         VALUES(?, ?)'''
             tuplee = (spis[0], count)
             cur.execute(add, tuplee)
-    else:
+    elif spis[1] == "до истечения времени" or spis[1] == "До истечения времени":
         players = cur.execute('''SELECT nickname from Time_Level''').fetchall()
         if spis[0] in players:
             players = cur.execute("""UPDATE Time_Level
@@ -100,6 +108,9 @@ def end(spis):
                                             VALUES(?, ?)'''
             tuplee = (spis[0], count)
             cur.execute(add, tuplee)
+    else:
+        pygame.quit()
+        sys.exit()
     data.commit()
     data.close()
     spis = for_open_2()
@@ -281,19 +292,19 @@ class EndScreen:
         screen.blit(fon, (0, 0))
         font = pygame.font.Font(None, 35)
         label_text1 = font.render(f'Ваш результат: {count}', True, (255, 255, 255))
-    #    label_text2 = font.render('Вернуться в стартовое меню', True, (0, 0, 0))
-    #    bt_surf = pygame.Surface((350, 75))
+        label_text2 = font.render('Вернуться в стартовое меню', True, (0, 0, 0))
+        bt_surf = pygame.Surface((350, 75))
         screen.blit(label_text1, (300, 250))
-   #     bt_surf.fill((0, 255, 0))
-    #    bt_surf.blit(label_text2, (3, 28))
-    #    screen.blit(bt_surf, (240, 350))
-   #     self.bt_rect = pygame.Rect(250, 350, 350, 75)
-'''
+        bt_surf.fill((0, 255, 0))
+        bt_surf.blit(label_text2, (3, 28))
+        screen.blit(bt_surf, (240, 350))
+        self.bt_rect = pygame.Rect(250, 350, 350, 75)
+
     def check(self, *args):
         if args and self.bt_rect.collidepoint(args[0].pos):
             return True
         return False
-'''
+
 
 spis = for_open_1()
 if spis is None:
@@ -331,7 +342,8 @@ if __name__ == '__main__':
                 faller_spr.update()
                 seconds -= 1
             if event.type == timer2:
-                end(spis)
+                if choosen_level is False:
+                    end(spis)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 print(event.pos)
         event = None
@@ -348,9 +360,3 @@ if __name__ == '__main__':
         clock.tick(60)
 
     pygame.quit()
-
-
-'''
-if spis and spis[1] == 'до касания земли:'
-    check_level('до касания земли')
-'''
