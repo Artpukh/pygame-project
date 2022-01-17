@@ -21,6 +21,7 @@ seconds = 60
 wall_list = []
 step = 8
 choosen_level = None
+screen_rect = pygame.Rect(0, 0, width, height)
 
 
 def check_level(level):
@@ -65,7 +66,6 @@ def for_open_1():
 
 def for_open_2():
     while True:
-        global running
         EndScreen()
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -305,6 +305,75 @@ class EndScreen:
         return False
 
 
+def for_win_screen():
+    while True:
+        WinnerScreen()
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                if WinnerScreen().check(event):
+                    pygame.quit()
+                    os.system('python main.py')
+                    sys.exit()
+        particle_count = 1
+        numbers = range(-3, 10)
+        for i in range(particle_count):
+             Particle(random.choice(numbers), random.choice(numbers))
+        stars.update()
+        WinnerScreen()
+        stars.draw(screen)
+        pygame.display.flip()
+        clock.tick(50)
+
+
+class WinnerScreen:
+    def __init__(self):
+        fon = pygame.transform.scale(load_image('black_fon.jpg'), (width, height))
+        screen.blit(fon, (0, 0))
+        font = pygame.font.Font(None, 35)
+        label_text = font.render('Поздравляем! Вы набрали 50 баллов', True, (255, 255, 255))
+        but_text = font.render('Вернуться в стартовое меню', True, (0, 0, 0))
+        bt_surf = pygame.Surface((350, 75))
+        screen.blit(label_text, (220, 280))
+        bt_surf.fill((0, 255, 0))
+        bt_surf.blit(but_text, (3, 28))
+        screen.blit(bt_surf, (240, 350))
+        self.bt_rect = pygame.Rect(250, 350, 350, 75)
+
+    def check(self, *args):
+        if args and self.bt_rect.collidepoint(args[0].pos):
+            return True
+        return False
+
+
+class Particle(pygame.sprite.Sprite):
+    fire = [load_image("star.png")]
+    for scale in (5, 10, 20):
+        fire.append(pygame.transform.scale(fire[0], (scale, scale)))
+
+    def __init__(self, dx, dy):
+        super().__init__(stars)
+        self.image = random.choice(self.fire)
+        self.rect = self.image.get_rect()
+
+        self.velocity = [dx, dy]
+        self.rect.x, self.rect.y = random.randint(75, 600), random.randint(150, 550)
+        self.gravity = 0.25
+
+    def update(self):
+        # применяем гравитационный эффект:
+        # движение с ускорением под действием гравитации
+        self.velocity[1] += self.gravity
+        # перемещаем частицу
+        self.rect.x += self.velocity[0]
+        self.rect.y += self.velocity[1]
+        # убиваем, если частица ушла за экран
+        if not self.rect.colliderect(screen_rect):
+            self.kill()
+
+
 spis = for_open_1()
 if spis is None:
     pygame.quit()
@@ -329,11 +398,11 @@ if __name__ == '__main__':
     Border(800, 375, 800, 700)
     Border(0, 380, 800, 380)
     Faller(faller_spr)
+    stars = pygame.sprite.Group()
     running = True
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-               # running = False
                 end(spis)
             if event.type == timer:
                 Faller(faller_spr)
@@ -353,6 +422,8 @@ if __name__ == '__main__':
         faller_spr.update()
         bomb_borders.update()
         draw(screen)
+        if choosen_level and count == 5:
+            for_win_screen()
         pygame.display.flip()
         clock.tick(60)
 
