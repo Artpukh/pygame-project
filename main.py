@@ -36,7 +36,7 @@ class AnimatedSprite(pygame.sprite.Sprite):
         self.cut_sheet(sheet, columns, rows)
         self.cur_frame = 0
         self.image = self.frames[self.cur_frame]
-        self.image = pygame.transform.scale(self.image, (150, 200))
+        self.image = pygame.transform.scale(self.image, (150, 150))
         self.rect = self.image.get_rect()
         print(self.image.get_rect())
         self.rect = self.rect.move(x, y)
@@ -328,11 +328,13 @@ if __name__ == '__main__':
             #dragon.move(0, -step)
             dragon.rect.x += 0
             dragon.rect.y += -step
+            dragon.image = pygame.transform.scale(dragon.image, (150, 150))
 
         if pygame.key.get_pressed()[pygame.K_DOWN]:
             #dragon.move(0, step)
             dragon.rect.x += 0
             dragon.rect.y += step
+            dragon.image = pygame.transform.scale(dragon.image, (150, 150))
 
         event = None
         screen.fill((149, 200, 216))
