@@ -1,5 +1,3 @@
-import time
-
 import pygame
 import sys
 import os
@@ -230,7 +228,7 @@ class Border(pygame.sprite.Sprite):
             wall_list.append(self.rect)
 
 
-class BombBorder(pygame.sprite.Sprite):
+class VirusBorder(pygame.sprite.Sprite):
     def __init__(self, x1, y1, x2):
         super().__init__(all_sprites)
         # горизонтальная стенка
@@ -386,10 +384,10 @@ if __name__ == '__main__':
     pygame.time.set_timer(timer, 1000)
     timer2 = pygame.USEREVENT + 2
     pygame.time.set_timer(timer2, 60000)
-    BombBorder(85, 545, 115)
-    BombBorder(125, 615, 155)
-    BombBorder(725, 545, 755)
-    BombBorder(680, 615, 710)
+    VirusBorder(85, 545, 115)
+    VirusBorder(125, 615, 155)
+    VirusBorder(725, 545, 755)
+    VirusBorder(680, 615, 710)
     gamer_spr = pygame.sprite.Group()
     Catcher(gamer_spr)
     faller_spr = pygame.sprite.Group()
@@ -422,7 +420,7 @@ if __name__ == '__main__':
         faller_spr.update()
         bomb_borders.update()
         draw(screen)
-        if choosen_level and count == 5:
+        if choosen_level and count == 50:
             for_win_screen()
         pygame.display.flip()
         clock.tick(60)
