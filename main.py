@@ -17,6 +17,7 @@ bomb_borders = pygame.sprite.Group()
 count = 0
 seconds = 60
 wall_list = []
+left = False
 step = 8
 choosen_level = None
 screen_rect = pygame.Rect(0, 0, width, height)
@@ -114,6 +115,25 @@ def end(spis):
     spis = for_open_2()
     return spis
 
+def move(xstep, ystep, player_rect):
+    player_rect.x += xstep
+    for block in wall_list:
+        if player_rect.colliderect(block):
+            if xstep < 0:
+                player_rect.left = block.right
+            elif xstep > 0:
+                player_rect.right = block.left
+            break
+
+    player_rect.y += ystep
+    for block in wall_list:
+        if player_rect.colliderect(block):
+            if ystep < 0:
+                player_rect.top = block.bottom
+            elif ystep > 0:
+                player_rect.bottom = block.top
+            break
+
 
 class Grass(pygame.sprite.Sprite):
     image = load_image("grass2.png", color_key=None) # grass1.png
@@ -127,56 +147,6 @@ class Grass(pygame.sprite.Sprite):
         # располагаем горы внизу
         self.rect.bottom = height
 
-
-class Catcher(pygame.sprite.Sprite):
-    image = load_image('car2.png', color_key=None)
-
-    def __init__(self, *group):
-        super().__init__(*group)
-        self.image = Catcher.image
-        self.rect = self.image.get_rect()
-        self.rect.x = 300
-        self.rect.y = 550
-        self.spr = self.rect
-        self.gamer_left = pygame.transform.flip(self.image, True, False)
-        self.main_gamer = self.image
-
-    def move(self, x_step, y_step):
-        self.spr.x += x_step
-        for wall in wall_list:
-            if self.spr.colliderect(wall):
-                if x_step < 0:
-                    self.spr.left = wall.right
-                elif x_step > 0:
-                    self.spr.right = wall.left
-                break
-
-        self.spr.y += y_step
-        for wall in wall_list:
-            if self.spr.colliderect(wall):
-                if y_step < 0:
-                    self.spr.top = wall.bottom
-                elif y_step > 0:
-                    self.spr.bottom = wall.top
-                break
-
-    def update(self, *args):
-        if pygame.sprite.spritecollide(self, faller_spr, True):
-            global count
-            count += 1
-        if args and (pygame.key.get_pressed()[pygame.K_RIGHT]):
-            self.move(step, 0)
-            self.image = self.main_gamer
-
-        if args and (pygame.key.get_pressed()[pygame.K_LEFT]):
-            self.move(-step, 0)
-
-            self.image = self.gamer_left
-        if args and (pygame.key.get_pressed()[pygame.K_UP]):
-            self.move(0, -step)
-
-        if args and (pygame.key.get_pressed()[pygame.K_DOWN]):
-            self.move(0, step)
 
 
 class Faller(pygame.sprite.Sprite, ):
@@ -372,36 +342,81 @@ class Particle(pygame.sprite.Sprite):
             self.kill()
 
 
+class AnimatedSprite(pygame.sprite.Sprite):
+    def __init__(self, sheet, columns, rows, x, y, *group):
+        super().__init__(*group)
+        self.frames = []
+        self.cut_sheet(sheet, columns, rows)
+        self.cur_frame = 0
+        self.image = self.frames[self.cur_frame]
+        self.image = pygame.transform.scale(self.image, (150, 150))
+        self.rect = self.image.get_rect()
+        self.rect = self.rect.move(x, y)
+        self.spr = self.rect
+
+    def cut_sheet(self, sheet, columns, rows):
+        self.rect = pygame.Rect(0, 0, sheet.get_width() // columns, sheet.get_height() // rows)
+        for j in range(rows):
+            for i in range(columns):
+                frame_location = (self.rect.w * i, self.rect.h * j)
+                self.frames.append(sheet.subsurface(pygame.Rect(frame_location, self.rect.size)))
+
+    def update(self):
+        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        self.image = self.frames[self.cur_frame]
+
+    def update_left(self):
+        self.cur_frame = (self.cur_frame + 1) % len(self.frames)
+        self.image = pygame.transform.flip(self.frames[self.cur_frame], True, False)
+
+    def touch(self):
+        if pygame.sprite.spritecollide(self, faller_spr, True):
+            global count
+            count += 1
+
+
 spis = for_open_1()
 if spis is None:
     pygame.quit()
     sys.exit()
 check_level(spis[1])
 if __name__ == '__main__':
+    all_sprites = pygame.sprite.Group()
+    horizontal_borders = pygame.sprite.Group()
+    vertical_borders = pygame.sprite.Group()
+    animation = pygame.sprite.Group()
+    bomb_borders = pygame.sprite.Group()
+    dragon = AnimatedSprite(load_image("spritesheet_x6.png"), 36, 1, 300, 550, animation)
+    gamer_left = pygame.transform.flip(dragon.image, True, False)
+    main_gamer = dragon.image
+    count = 0
+    wall_list = []
     screen.fill((149, 200, 216))
     grass = Grass()
+    clock = pygame.time.Clock()
     timer = pygame.USEREVENT + 1
-    pygame.time.set_timer(timer, 1000)
-    timer2 = pygame.USEREVENT + 2
-    pygame.time.set_timer(timer2, 60000)
     VirusBorder(85, 545, 115)
     VirusBorder(125, 615, 155)
     VirusBorder(725, 545, 755)
     VirusBorder(680, 615, 710)
     gamer_spr = pygame.sprite.Group()
-    Catcher(gamer_spr)
     faller_spr = pygame.sprite.Group()
+    pygame.time.set_timer(timer, 1000)
+    timer2 = pygame.USEREVENT + 2
+    pygame.time.set_timer(timer2, 60000)
     Border(0, 380, 0, 700)
     Border(0, 700, 800, 700)
     Border(800, 375, 800, 700)
     Border(0, 380, 800, 380)
     Faller(faller_spr)
     stars = pygame.sprite.Group()
+
     running = True
     while running:
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                end(spis)
+                running = False
             if event.type == timer:
                 Faller(faller_spr)
                 faller_spr.draw(screen)
@@ -410,18 +425,54 @@ if __name__ == '__main__':
             if event.type == timer2:
                 if choosen_level is False:
                     end(spis)
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                pygame.quit()
+
+        if pygame.key.get_pressed()[pygame.K_RIGHT]:
+            move(step, 0, dragon.rect)
+            dragon.update()
+            dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+            left = False
+
+        if pygame.key.get_pressed()[pygame.K_LEFT]:
+            move(-step, 0, dragon.rect)
+            dragon.update_left()
+            dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+            left = True
+
+        if pygame.key.get_pressed()[pygame.K_UP]:
+            move(0, -step, dragon.rect)
+            if left:
+                dragon.update_left()
+                dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+            else:
+                dragon.update()
+                dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+
+        if pygame.key.get_pressed()[pygame.K_DOWN]:
+            move(0, step, dragon.rect)
+            if left:
+                dragon.update_left()
+                dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+            else:
+                dragon.update()
+                dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+
         event = None
         screen.fill((149, 200, 216))
         gamer_spr.update(event)
         all_sprites.draw(screen)
         all_sprites.update()
-        gamer_spr.draw(screen)
+       # gamer_spr.draw(screen)
         faller_spr.draw(screen)
         faller_spr.update()
-        bomb_borders.update()
+        dragon.touch()
         draw(screen)
-        if choosen_level and count == 50:
+        animation.draw(screen)
+        if choosen_level and count == 5:
             for_win_screen()
+        pygame.display.flip()
+        clock.tick(60)
         pygame.display.flip()
         clock.tick(60)
 

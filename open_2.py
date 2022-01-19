@@ -145,7 +145,6 @@ def main_prog(rect, box, *args):
             sp = []
             sp.append(box.nick_and_lvl())
             sp.append('до истечения времени')
-            print(sp)
             return sp
 
 
