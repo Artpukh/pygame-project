@@ -8,9 +8,9 @@ cur = data.cursor()
 pygame.init()
 size = width, height = 800, 700
 screen = pygame.display.set_mode(size)
-color_inactive = pygame.Color('lightskyblue3')
-color_active = pygame.Color('dodgerblue2')
-shrift = pygame.font.Font(None, 32)
+color_inactive = pygame.Color(175, 238, 238)
+color_active = pygame.Color(0, 191, 255)
+font_txt = pygame.font.Font(None, 32)
 
 
 def load_image(name, colorkey=None):
@@ -30,7 +30,7 @@ def load_image(name, colorkey=None):
     return image
 
 
-def labels(titles, coords, surf):
+def labels(titles, coords, surf):  # надписи на кнопках, над полем ввода, об уровнях сложности
     fonn = pygame.transform.scale(load_image('black_fon.jpg'), (width, height))
     screen.blit(fonn, (0, 0))
     label_font = pygame.font.Font(None, 28)
@@ -48,10 +48,10 @@ def labels(titles, coords, surf):
     surf[1].blit(label_text4, coords[4])
 
 
-def bestlb_tch(spis):
+def bestlb_tch(spis):  # надписи с лучшим игроком в режиме "до касания"
     font = pygame.font.Font(None, 20)
     text_1 = font.render('Лучший игрок в "до касания":', True, (255, 255, 255))
-    text_2 = font.render(spis[0], True, (255, 255, 255))
+    text_2 = font.render(f'{spis[0]}', True, (255, 255, 255))
     text_3 = font.render('Баллы:', True, (255, 255, 255))
     text_4 = font.render(f'{spis[1]}', True, (255, 255, 255))
     screen.blit(text_1, (50, 35))
@@ -60,7 +60,7 @@ def bestlb_tch(spis):
     screen.blit(text_4, (50, 110))
 
 
-def bestlb_time(spis):
+def bestlb_time(spis):  # надписи с лучшим игроком в режиме "до истечения времени"
     font = pygame.font.Font(None, 20)
     text_5 = font.render('Лучший игрок в "до истечения времени":', True, (255, 255, 255))
     text_6 = font.render(f'{spis[0]}', True, (255, 255, 255))
@@ -72,7 +72,7 @@ def bestlb_time(spis):
     screen.blit(text_8, (500, 110))
 
 
-def thebest_tch():
+def thebest_tch():  # достаём из таблицы лучшего игрока в "до касания"
     players_tch = cur.execute('''SELECT nickname, points from Touch_Level''').fetchall()
     if players_tch:
         players_tch = sorted(players_tch, key=lambda x: -x[1])
@@ -84,7 +84,7 @@ def thebest_tch():
         return ['Пока что никого нет :(', 0]
 
 
-def thebest_time():
+def thebest_time():  # достаём из таблицы лучшего игрока в "до истечения времени"
     players_time = cur.execute('''SELECT nickname, points from Time_Level''').fetchall()
     if players_time:
         players_time = sorted(players_time, key=lambda x: -x[1])
@@ -96,12 +96,12 @@ def thebest_time():
         return ['Пока что никого нет :(', 0]
 
 
-class InputBox:
+class InputBox:  # строка для ввода
     def __init__(self, x, y, w, h, text=''):
         self.rect = pygame.Rect(x, y, w, h)
         self.color = color_inactive
         self.text = text
-        self.txt_surface = shrift.render(text, True, self.color)
+        self.txt_surface = font_txt.render(text, True, self.color)
         self.active = False
         self.nick = ''
 
@@ -120,21 +120,21 @@ class InputBox:
                     self.text = self.text[:-1]
                 else:
                     self.text += event.unicode
-                self.txt_surface = shrift.render(self.text, True, self.color)
+                self.txt_surf = font_txt.render(self.text, True, self.color)
 
     def update(self):
         width = max(200, self.txt_surface.get_width() + 10)
-        self.rect.w = width
+        self.rect.w = width  # ширина поля ввода
 
-    def draw(self, screen):
-        screen.blit(self.txt_surface, (self.rect.x + 5, self.rect.y+5))
+    def draw(self, screen):  # отображаем на экране поле ввода и текст
+        screen.blit(self.txt_surf, (self.rect.x + 5, self.rect.y + 5))
         pygame.draw.rect(screen, self.color, self.rect, 2)
 
     def nick_and_lvl(self):
         return self.nick
 
 
-def main_prog(rect, box, *args):
+def main_prog(rect, box, *args):  # при нажатии на кнопку возврщаем введённый никнейм и выбранный режим
     if args and args[0].type == pygame.MOUSEBUTTONDOWN:
         if rect[0].collidepoint(args[0].pos):
             sp = []
@@ -148,13 +148,13 @@ def main_prog(rect, box, *args):
             return sp
 
 
-def main(screen):
-    bt1_surf = pygame.Surface((220, 75))
-    bt2_surf = pygame.Surface((330, 75))
+def main(screen):  # основной цикл
+    bt1_surf = pygame.Surface((220, 75))  # кнопка "до касания"
+    bt2_surf = pygame.Surface((330, 75))  # кнопка "до истечения времени"
     surfaces = [bt1_surf, bt2_surf]
-    labels_cord_sp = [(290, 170), (40, 295), (100, 400), (380, 400), (2, 28)]
+    labels_cord_sp = [(290, 170), (40, 295), (100, 400), (380, 400), (2, 28)]  # координаты надписей
     labels_ttl_sp = ['Введите ваш никнейм', 'Введите уровень сложности: до касания земли или до истечения времени',
-                     'Играть в "до касания"', 'Играть в "до истечения времени"']
+                     'Играть в "до касания"', 'Играть в "до истечения времени"']  # надписи
     labels(labels_ttl_sp, labels_cord_sp, surfaces)
     touching = thebest_tch()
     timing = thebest_time()
@@ -165,7 +165,7 @@ def main(screen):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 run = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
+            if event.type == pygame.MOUSEBUTTONDOWN:  # проверяем нажатие кнопки возвращаем информацию в основную программу
                 main_prog([pygame.Rect(100, 400, 220, 75), pygame.Rect(380, 400, 330, 75)], input_box, event)
                 if main_prog([pygame.Rect(100, 400, 220, 75), pygame.Rect(380, 400, 330, 75)], input_box, event):
                     return main_prog([pygame.Rect(100, 400, 220, 75), pygame.Rect(380, 400, 330, 75)], input_box, event)
