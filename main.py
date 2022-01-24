@@ -396,9 +396,9 @@ if __name__ == '__main__':
     bomb_borders = pygame.sprite.Group()
     sound = makeMusic("data/sound1.mp3")
     playMusic(1)
-    dragon = AnimatedSprite(load_image("spritesheet_x6.png"), 36, 1, 300, 550, animation)
-    gamer_left = pygame.transform.flip(dragon.image, True, False)
-    main_gamer = dragon.image
+    dracon = AnimatedSprite(load_image("spritesheet_x6.png"), 36, 1, 300, 550, animation)
+    gamer_left = pygame.transform.flip(dracon.image, True, False)
+    main_gamer = dracon.image
     count = 0
     wall_list = []
     screen.fill((149, 200, 216))
@@ -460,34 +460,34 @@ if __name__ == '__main__':
                 rewindMusic()
 
         if pygame.key.get_pressed()[pygame.K_RIGHT]:
-            move(step, 0, dragon.rect)
-            dragon.update()
-            dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+            move(step, 0, dracon.rect)
+            dracon.update()
+            dracon.image = pygame.transform.scale(dracon.image, (150, 150))
             left = False
 
         if pygame.key.get_pressed()[pygame.K_LEFT]:
-            move(-step, 0, dragon.rect)
-            dragon.update_left()
-            dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+            move(-step, 0, dracon.rect)
+            dracon.update_left()
+            dracon.image = pygame.transform.scale(dracon.image, (150, 150))
             left = True
 
         if pygame.key.get_pressed()[pygame.K_UP]:
-            move(0, -step, dragon.rect)
+            move(0, -step, dracon.rect)
             if left:
-                dragon.update_left()
-                dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+                dracon.update_left()
+                dracon.image = pygame.transform.scale(dracon.image, (150, 150))
             else:
-                dragon.update()
-                dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+                dracon.update()
+                dracon.image = pygame.transform.scale(dracon.image, (150, 150))
 
         if pygame.key.get_pressed()[pygame.K_DOWN]:
-            move(0, step, dragon.rect)
+            move(0, step, dracon.rect)
             if left:
-                dragon.update_left()
-                dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+                dracon.update_left()
+                dracon.image = pygame.transform.scale(dracon.image, (150, 150))
             else:
-                dragon.update()
-                dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+                dracon.update()
+                dracon.image = pygame.transform.scale(dracon.image, (150, 150))
 
         event = None
         screen.fill((149, 200, 216))
@@ -496,14 +496,15 @@ if __name__ == '__main__':
         all_sprites.update()
         faller_spr.draw(screen)
         faller_spr.update()
-        dragon.touch()
+        dracon.touch()
         draw(screen)
         animation.draw(screen)
-        if choosen_level and count == 50:
+        if choosen_level and count == 5:
             stopMusic()
             win_music = makeSound("data/sound_for_win1.mp3")
             playSound(win_music)
             for_win_screen()
         pygame.display.flip()
         clock.tick(60)
+
     pygame.quit()
