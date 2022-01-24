@@ -455,7 +455,6 @@ if __name__ == '__main__':
                         milliseconds += 100
                     pygame.time.set_timer(spawn_timer, milliseconds)
                     milliseconds -= 100
-                    print(f"ms = {milliseconds}, its good")
 
             if event.type == timer_70sec:
                 if choosen_level is False:
