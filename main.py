@@ -1,12 +1,12 @@
-import pygame
-import sys
-import os
+import pygame.display
+from pygame_functions import *
 import random
 from open_2 import main
 import sqlite3
 
 
 pygame.init()
+pygame.display.set_caption('Ну, вирус, погоди!')
 size = width, height = 800, 700
 screen = pygame.display.set_mode(size)
 clock = pygame.time.Clock()
@@ -14,13 +14,15 @@ all_sprites = pygame.sprite.Group()
 horizontal_borders = pygame.sprite.Group()
 vertical_borders = pygame.sprite.Group()
 bomb_borders = pygame.sprite.Group()
-count = 0 # очки
-seconds = 60 # время таймера
-wall_list = [] # список стен
-left = False # повернут ли персонаж влево
-step = 8 # шаг персонажа
-choosen_level = None # выбранный уровень
-p50 = False
+count = 0  # очки
+seconds = 70  # время таймера
+milliseconds = 800  # время, через которое появляются новые вирусы
+main_time = 0
+wall_list = []  # список стен
+left = False  # повернут ли персонаж влево
+step = 7  # шаг персонажа
+choosen_level = None  # выбранный уровень
+p50 = False  # проверка, не набрал ли игрок 50 баллов
 screen_rect = pygame.Rect(0, 0, width, height)
 
 
@@ -188,7 +190,11 @@ class Faller(pygame.sprite.Sprite, ):  # вирусы
         if choosen_level:
             if pygame.sprite.spritecollide(self, bomb_borders, False):
                 global spis
-                end(spis, p50)  # открываем финальное окно при касании земли
+                stopMusic()
+                lose_music = makeSound("data/sound_for_lose1.mp3")
+                playSound(lose_music)
+                end(spis, p50)
+
 
 
 class Border(pygame.sprite.Sprite):  # границы
@@ -386,6 +392,7 @@ class AnimatedSprite(pygame.sprite.Sprite):  # анимация
             count += 1
 
 
+pygame.display.set_icon(load_image('icon.png'))
 spis = for_open_1()  # принимаем никнейм и уровень
 if spis is None:
     pygame.quit()
@@ -397,24 +404,30 @@ if __name__ == '__main__':
     vertical_borders = pygame.sprite.Group()
     animation = pygame.sprite.Group()
     bomb_borders = pygame.sprite.Group()
-    dragon = AnimatedSprite(load_image("spritesheet_x6.png"), 36, 1, 300, 550, animation)
-    gamer_left = pygame.transform.flip(dragon.image, True, False)
-    main_gamer = dragon.image
+    doctor = AnimatedSprite(load_image("spritesheet_x6.png"), 36, 1, 300, 550, animation)
+    gamer_left = pygame.transform.flip(doctor.image, True, False)
+    main_gamer = doctor.image
     count = 0
     wall_list = []
+    sound = makeMusic("data/sound1.mp3")
+    playMusic()
     screen.fill((149, 200, 216))
     grass = Grass()
     clock = pygame.time.Clock()
-    timer = pygame.USEREVENT + 1
-    pygame.time.set_timer(timer, 1000)  # частота, с которой падают вирусы
+    spawn_timer = pygame.USEREVENT + 1
+    pygame.time.set_timer(spawn_timer, 1000)  # частота, с которой падают вирусы в самом начале
     VirusBorder(85, 545, 115)
     VirusBorder(125, 615, 155)
     VirusBorder(725, 545, 755)
     VirusBorder(680, 615, 710)
     gamer_spr = pygame.sprite.Group()
     faller_spr = pygame.sprite.Group()
-    timer2 = pygame.USEREVENT + 2
-    pygame.time.set_timer(timer2, 60000)  # таймер
+    timer_70sec = pygame.USEREVENT + 2
+    pygame.time.set_timer(timer_70sec, 70000)  # таймер
+    timer_for_acceleration = pygame.USEREVENT + 3
+    pygame.time.set_timer(timer_for_acceleration, 1000)  # ускорение частиц
+    timer_for_music = pygame.USEREVENT + 4
+    pygame.time.set_timer(timer_for_music, 85000)  # для перезапуска музыки
     Border(0, 380, 0, 700)
     Border(0, 700, 800, 700)
     Border(800, 375, 800, 700)
@@ -428,46 +441,61 @@ if __name__ == '__main__':
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 end(spis, p50)
-            if event.type == timer:
+            if event.type == spawn_timer:
                 Faller(faller_spr)
                 faller_spr.draw(screen)
                 faller_spr.update()
+
+            if event.type == timer_for_acceleration:
                 seconds -= 1
-            if event.type == timer2:
+                main_time += 1
+                if main_time == 15 or main_time == 30 or main_time == 45 or main_time == 60 or main_time == 75\
+                        or main_time == 100 or main_time == 115 or main_time == 130:
+                    if milliseconds == 0:
+                        milliseconds += 100
+                    pygame.time.set_timer(spawn_timer, milliseconds)
+                    milliseconds -= 100
+                    print(f"ms = {milliseconds}, its good")
+
+            if event.type == timer_70sec:
                 if choosen_level is False:
+                    stopMusic()
+                    lose_music = makeSound("data/sound_for_lose1.mp3")
+                    playSound(lose_music)
                     end(spis, p50)
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                pygame.quit()
+
+            if event.type == timer_for_music:
+                rewindMusic()
 
         if pygame.key.get_pressed()[pygame.K_RIGHT]:  # движение вправо
-            move(step, 0, dragon.rect)
-            dragon.update()
-            dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+            move(step, 0, doctor.rect)
+            doctor.update()
+            doctor.image = pygame.transform.scale(doctor.image, (150, 150))
             left = False
 
         if pygame.key.get_pressed()[pygame.K_LEFT]:  # движение влево
-            move(-step, 0, dragon.rect)
-            dragon.update_left()
-            dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+            move(-step, 0, doctor.rect)
+            doctor.update_left()
+            doctor.image = pygame.transform.scale(doctor.image, (150, 150))
             left = True
 
         if pygame.key.get_pressed()[pygame.K_UP]:  # движение вверх
-            move(0, -step, dragon.rect)
+            move(0, -step, doctor.rect)
             if left:  # если герой смотрел влево, то, поднимаясь, он тоже будет смотреть влево
-                dragon.update_left()
-                dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+                doctor.update_left()
+                doctor.image = pygame.transform.scale(doctor.image, (150, 150))
             else:
-                dragon.update()
-                dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+                doctor.update()
+                doctor.image = pygame.transform.scale(doctor.image, (150, 150))
 
         if pygame.key.get_pressed()[pygame.K_DOWN]:  # движение вниз
-            move(0, step, dragon.rect)
+            move(0, step, doctor.rect)
             if left:  # если герой смотрел влево, то, опускаясь, он тоже будет смотреть влево
-                dragon.update_left()
-                dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+                doctor.update_left()
+                doctor.image = pygame.transform.scale(doctor.image, (150, 150))
             else:
-                dragon.update()
-                dragon.image = pygame.transform.scale(dragon.image, (150, 150))
+                doctor.update()
+                doctor.image = pygame.transform.scale(doctor.image, (150, 150))
 
         event = None
         screen.fill((149, 200, 216))
@@ -476,13 +504,14 @@ if __name__ == '__main__':
         all_sprites.update()
         faller_spr.draw(screen)
         faller_spr.update()
-        dragon.touch()
+        doctor.touch()
         draw(screen)
         animation.draw(screen)
-        if choosen_level and count == 50:
+        if choosen_level and count == 5:
+            stopMusic()
+            win_music = makeSound("data/sound_for_win1.mp3")
+            playSound(win_music)  # перезапуск музыки
             for_win_screen()  # если игрок набирает 50 баллов в "до касания", то открывается специальное окно
-        pygame.display.flip()
-        clock.tick(60)
         pygame.display.flip()
         clock.tick(60)
 
