@@ -101,7 +101,7 @@ class InputBox:  # строка для ввода
         self.rect = pygame.Rect(x, y, w, h)
         self.color = color_inactive
         self.text = text
-        self.txt_surface = font_txt.render(text, True, self.color)
+        self.txt_surf = font_txt.render(text, True, self.color)
         self.active = False
         self.nick = ''
 
@@ -123,7 +123,7 @@ class InputBox:  # строка для ввода
                 self.txt_surf = font_txt.render(self.text, True, self.color)
 
     def update(self):
-        width = max(200, self.txt_surface.get_width() + 10)
+        width = max(200, self.txt_surf.get_width() + 10)
         self.rect.w = width  # ширина поля ввода
 
     def draw(self, screen):  # отображаем на экране поле ввода и текст

@@ -90,11 +90,8 @@ def end(spis, p50):  # добавление результатов в базу �
         our_pl = []
         # находим элемент, у которого никнейм совпадает с никнеймом современного игрока
         for i in players:
-            print(i[0])
-            print(spis[0])
             if str(i[0]) == str(spis[0]):
                 our_pl.append(i)
-        print(our_pl)
         if our_pl:
             if our_pl[0][1] < count:  # проверка на величнину набранных очков
                 players = cur.execute("""UPDATE Touch_Level
@@ -110,11 +107,8 @@ def end(spis, p50):  # добавление результатов в базу �
         our_pl = []
         # находим элемент, у которого никнейм совпадает с никнеймом современного игрока
         for i in players:
-            print(i[0])
-            print(spis[0])
             if str(i[0]) == str(spis[0]):
                 our_pl.append(i)
-        print(our_pl)
         if our_pl:
             if our_pl[0][1] < count:
                 players = cur.execute("""UPDATE Time_Level
