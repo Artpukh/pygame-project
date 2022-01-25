@@ -510,7 +510,7 @@ if __name__ == '__main__':
         doctor.touch()
         draw(screen)
         animation.draw(screen)
-        if choosen_level and count == 10:
+        if choosen_level and count == 50:
             stopMusic()
             win_music = makeSound("data/sound_for_win1.mp3")
             playSound(win_music)  # перезапуск музыки
