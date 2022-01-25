@@ -4,7 +4,7 @@ import random
 from open_2 import main
 import sqlite3
 
-
+os.system("pip install -r requirements.txt")
 pygame.init()
 pygame.display.set_caption('Ну, вирус, погоди!')
 size = width, height = 800, 700
@@ -440,7 +440,11 @@ if __name__ == '__main__':
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                stopMusic()
+                lose_music = makeSound("data/sound_for_lose1.mp3")
+                playSound(lose_music)
                 end(spis, p50)
+                
             if event.type == spawn_timer:
                 Faller(faller_spr)
                 faller_spr.draw(screen)
