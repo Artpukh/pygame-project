@@ -20,19 +20,19 @@ milliseconds = 800  # время, через которое появляются
 main_time = 0
 wall_list = []  # список стен
 left = False  # повернут ли персонаж влево
-step = 7  # шаг персонажа
-choosen_level = None  # выбранный уровень
+STEP = 7  # шаг персонажа
+GRAVITY = 0.25  # "притяжение" звёздочек к нижней границе
+choose_level = None  # выбранный уровень
 p50 = False  # проверка, не набрал ли игрок 50 баллов
 screen_rect = pygame.Rect(0, 0, width, height)
 
 
-def check_level(level): # проверака уровня
-    global choosen_level
+def check_level(level):  # проверака уровня
+    global choose_level
     if level == 'до касания земли':
-        choosen_level = True
-
+        choose_level = True
     else:
-        choosen_level = False
+        choose_level = False
 
 
 def load_image(name, color_key=None):  # загрузка фотографий
@@ -45,7 +45,7 @@ def load_image(name, color_key=None):  # загрузка фотографий
     if color_key is not None:
         image = image.convert()
         if color_key == -1:
-            colorkey = image.get_at((0, 0))
+            color_key = image.get_at((0, 0))
         image.set_colorkey(color_key)
     else:
         image = image.convert_alpha()
@@ -55,14 +55,14 @@ def load_image(name, color_key=None):  # загрузка фотографий
 def for_open_1():  # открытие первого стартового окна
     StartScreen('black_fon.jpg')
     while True:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        for events in pygame.event.get():
+            if events.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            elif event.type == pygame.KEYDOWN or \
-                    event.type == pygame.MOUSEBUTTONDOWN:
-                spis = main(screen)  # список, содержащий никнейм игрока и выбранный им уровень
-                return spis
+            elif events.type == pygame.KEYDOWN or \
+                    events.type == pygame.MOUSEBUTTONDOWN:
+                lst = main(screen)  # список, содержащий никнейм игрока и выбранный им уровень
+                return lst
         pygame.display.flip()
         clock.tick(30)
 
@@ -70,12 +70,12 @@ def for_open_1():  # открытие первого стартового окн
 def for_final():  # открытие финального окна
     while True:
         EndScreen()
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        for events in pygame.event.get():
+            if events.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if EndScreen().check(event):
+            if events.type == pygame.MOUSEBUTTONDOWN:
+                if EndScreen().check(events):
                     pygame.quit()
                     os.system('python main.py')  # перезапуск игры
                     sys.exit()
@@ -84,69 +84,68 @@ def for_final():  # открытие финального окна
         clock.tick(30)
 
 
-def end(spis, p50):  # добавление результатов в базу данных
+def end(lst, pts50):  # добавление результатов в базу данных
     data = sqlite3.connect('game_data.db')
     cur = data.cursor()
-    if spis[1] == "до касания земли":
+    if lst[1] == "до касания земли":
         players = cur.execute('''SELECT nickname, points from Touch_Level''').fetchall()
         our_pl = []
         # находим элемент, у которого никнейм совпадает с никнеймом современного игрока
         for i in players:
-            if str(i[0]) == str(spis[0]):
+            if str(i[0]) == str(lst[0]):
                 our_pl.append(i)
         if our_pl:
             if our_pl[0][1] < count:  # проверка на величнину набранных очков
-                players = cur.execute("""UPDATE Touch_Level
+                cur.execute("""UPDATE Touch_Level
                     SET points=?
-                    WHERE nickname=?""", (count, spis[0]))
+                    WHERE nickname=?""", (count, lst[0]))
         else:
             add = '''INSERT into Touch_Level(nickname,points)
                                                         VALUES(?, ?)'''
-            tuplee = (spis[0], count)
-            cur.execute(add, tuplee)
-    elif spis[1] == "до истечения времени":
+            tpl = (lst[0], count)
+            cur.execute(add, tpl)
+    elif lst[1] == "до истечения времени":
         players = cur.execute('''SELECT nickname, points from Time_Level''').fetchall()
         our_pl = []
         # находим элемент, у которого никнейм совпадает с никнеймом современного игрока
         for i in players:
-            if str(i[0]) == str(spis[0]):
+            if str(i[0]) == str(lst[0]):
                 our_pl.append(i)
         if our_pl:
             if our_pl[0][1] < count:
-                players = cur.execute("""UPDATE Time_Level
+                cur.execute("""UPDATE Time_Level
                             SET points=?
-                            WHERE nickname=?""", (count, spis[0]))
+                            WHERE nickname=?""", (count, lst[0]))
         else:
             add = '''INSERT into Time_Level(nickname,points)
                                             VALUES(?, ?)'''
-            tuplee = (spis[0], count)
-            cur.execute(add, tuplee)
+            tpl = (lst[0], count)
+            cur.execute(add, tpl)
     else:
         pygame.quit()
         sys.exit()
     data.commit()
     data.close()
-    if not p50: # если игрок набирает 50 очков в "до касания", то финальное окно не открывается
-        spis = for_final()
-        return spis
+    if not pts50:  # если игрок набирает 50 очков в "до касания", то финальное окно не открывается
+        for_final()
 
 
-def move(xstep, ystep, player_rect):  # проверка на столкновение со стенами
-    player_rect.x += xstep
+def move(x_step, y_step, player_rect):  # проверка на столкновение со стенами
+    player_rect.x += x_step
     for block in wall_list:
         if player_rect.colliderect(block):
-            if xstep < 0:
+            if x_step < 0:
                 player_rect.left = block.right  # выравниваем по левой стене
-            elif xstep > 0:
+            elif x_step > 0:
                 player_rect.right = block.left  # выравниваем по правой стене
             break
 
-    player_rect.y += ystep
+    player_rect.y += y_step
     for block in wall_list:
         if player_rect.colliderect(block):
-            if ystep < 0:
+            if y_step < 0:
                 player_rect.top = block.bottom  # выравние по верхней стене
-            elif ystep > 0:
+            elif y_step > 0:
                 player_rect.bottom = block.top  # выравнивание по нижней стене
             break
 
@@ -163,7 +162,7 @@ class Grass(pygame.sprite.Sprite):  # фон травы
 
 
 class Faller(pygame.sprite.Sprite, ):  # вирусы
-    image = load_image('korona1.png')
+    image = load_image("korona1.png")
 
     def __init__(self, *group):
         super().__init__(*group)
@@ -187,14 +186,13 @@ class Faller(pygame.sprite.Sprite, ):  # вирусы
 
     def update(self):
         self.rect = self.rect.move(0, 2)
-        if choosen_level:
+        if choose_level:
             if pygame.sprite.spritecollide(self, bomb_borders, False):
                 global spis
                 stopMusic()
-                lose_music = makeSound("data/sound_for_lose1.mp3")
-                playSound(lose_music)
+                loose_music = makeSound("data/sound_for_lose1.mp3")
+                playSound(loose_music)
                 end(spis, p50)
-
 
 
 class Border(pygame.sprite.Sprite):  # границы
@@ -223,7 +221,7 @@ class VirusBorder(pygame.sprite.Sprite):  # границы для вируса
         self.rect = pygame.Rect(x1, y1, x2 - x1, 1)
 
     def update(self):
-        if not choosen_level:
+        if not choose_level:
             if pygame.sprite.spritecollide(self, faller_spr, True):
                 pass  # если "до истечения времени", то ничего не происходит
 
@@ -235,7 +233,7 @@ def draw(sc):  # количество очков и таймер
     text_x = 640
     text_y = 10
     sc.blit(text, (text_x, text_y))
-    if not choosen_level:
+    if not choose_level:
         text_timer = font.render(f'Осталось секунд: {seconds}', True, (255, 255, 255))
         text_timer_x = 5
         text_timer_y = 10
@@ -291,12 +289,13 @@ class EndScreen:  # финальный экран
 def for_win_screen():  # для открытия окна при наборе 50 баллов в "до касания земли"
     while True:
         WinnerScreen()
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        for events in pygame.event.get():
+            if events.type == pygame.QUIT:
                 pygame.quit()
                 sys.exit()
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                if WinnerScreen().check(event):
+            if events.type == pygame.MOUSEBUTTONDOWN:
+                if WinnerScreen().check(events):
+                    global p50
                     p50 = True  # набрано 50 баллов
                     end(spis, p50)
                     pygame.quit()
@@ -305,7 +304,7 @@ def for_win_screen():  # для открытия окна при наборе 50
         particle_count = 1  # количество появившихся звёздочек за одну иттерацию
         numbers = range(-3, 10)  # скорости звёздочек
         for i in range(particle_count):
-             Particle(random.choice(numbers), random.choice(numbers))  # "рождаем" звёздочки
+            Particle(random.choice(numbers), random.choice(numbers))  # "рождаем" звёздочки
         stars.update()
         WinnerScreen()
         stars.draw(screen)
@@ -345,7 +344,7 @@ class Particle(pygame.sprite.Sprite):  # звёздочки
 
         self.velocity = [dx, dy]
         self.rect.x, self.rect.y = random.randint(75, 600), random.randint(150, 550)
-        self.gravity = 0.25
+        self.gravity = GRAVITY
 
     def update(self):
         # применяем гравитационный эффект:
@@ -461,7 +460,7 @@ if __name__ == '__main__':
                     milliseconds -= 100
 
             if event.type == timer_70sec:
-                if choosen_level is False:
+                if choose_level is False:
                     stopMusic()
                     lose_music = makeSound("data/sound_for_lose1.mp3")
                     playSound(lose_music)
@@ -471,19 +470,19 @@ if __name__ == '__main__':
                 rewindMusic()
 
         if pygame.key.get_pressed()[pygame.K_RIGHT]:  # движение вправо
-            move(step, 0, doctor.rect)
+            move(STEP, 0, doctor.rect)
             doctor.update()
             doctor.image = pygame.transform.scale(doctor.image, (150, 150))
             left = False
 
         if pygame.key.get_pressed()[pygame.K_LEFT]:  # движение влево
-            move(-step, 0, doctor.rect)
+            move(-STEP, 0, doctor.rect)
             doctor.update_left()
             doctor.image = pygame.transform.scale(doctor.image, (150, 150))
             left = True
 
         if pygame.key.get_pressed()[pygame.K_UP]:  # движение вверх
-            move(0, -step, doctor.rect)
+            move(0, -STEP, doctor.rect)
             if left:  # если герой смотрел влево, то, поднимаясь, он тоже будет смотреть влево
                 doctor.update_left()
                 doctor.image = pygame.transform.scale(doctor.image, (150, 150))
@@ -492,7 +491,7 @@ if __name__ == '__main__':
                 doctor.image = pygame.transform.scale(doctor.image, (150, 150))
 
         if pygame.key.get_pressed()[pygame.K_DOWN]:  # движение вниз
-            move(0, step, doctor.rect)
+            move(0, STEP, doctor.rect)
             if left:  # если герой смотрел влево, то, опускаясь, он тоже будет смотреть влево
                 doctor.update_left()
                 doctor.image = pygame.transform.scale(doctor.image, (150, 150))
@@ -510,7 +509,7 @@ if __name__ == '__main__':
         doctor.touch()
         draw(screen)
         animation.draw(screen)
-        if choosen_level and count == 50:
+        if choose_level and count == 50:
             stopMusic()
             win_music = makeSound("data/sound_for_win1.mp3")
             playSound(win_music)  # перезапуск музыки
